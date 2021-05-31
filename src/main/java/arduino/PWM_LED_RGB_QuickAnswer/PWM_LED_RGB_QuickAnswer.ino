@@ -133,9 +133,9 @@ void ledBlueOn() {
   analogWrite(LED_BLUE_PIN, 255);
   // 亮LED藍燈
   if(blueCount == 1) {
-    digitalWrite(LED_BLUE_1_PIN, HIGH); // 亮第一個綠燈
+    digitalWrite(LED_BLUE_1_PIN, HIGH); // 亮第一個藍燈
   } else if(blueCount == 2) {
-    digitalWrite(LED_BLUE_2_PIN, HIGH); // 亮第二個綠燈
+    digitalWrite(LED_BLUE_2_PIN, HIGH); // 亮第二個藍燈
   }
 }
 
