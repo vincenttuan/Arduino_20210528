@@ -1,3 +1,7 @@
+/*
+電池的正極接 -> A0
+電池的負極接 -> GND
+*/
 const int v_pin = A0;
 
 void setup() {
