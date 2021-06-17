@@ -13,11 +13,12 @@ RFID rfid(SDA_PIN, RST_PIN);
 
 // 驗證資料(block id: 11)
 unsigned char oldkeyA[16] {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xff, 0x07, 0x80, 0x69, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-unsigned char newkeyA[16] {0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xff, 0x07, 0x80, 0x69, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+unsigned char newkeyA[16] {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xff, 0x07, 0x80, 0x69, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 int key_blockId = 11;
 String inString = "";
 // 1.code here
+boolean isNewPasswordStatus = false; // 現在是否是在輸入新密碼的狀態
 
 void setup() {
   Serial.begin(9600);
@@ -28,8 +29,16 @@ void setup() {
 
 void loop() {
   // 4.code here
+  if(isNewPasswordStatus) { // 輸入新密碼程序
+    inputNewPassword();     // 手動主控台輸入 new password
+    writeNewPassword();     // rfid 卡寫入最新的 new password
+  } else { // 輸入舊密碼程序
+    inputOldPassword();     // 手動主控台輸入 old password
+    confirmOldPassword();   // rfid 卡確認使用者所輸入的 old password
+  }
 }
 
+// 手動主控台輸入 old password
 void inputOldPassword() {
   // Read serial input:
   while (Serial.available() > 0) {
@@ -54,6 +63,7 @@ void inputOldPassword() {
   delay(100);
 }
 
+// 手動主控台輸入 new password
 void inputNewPassword() {
   // Read serial input:
   while (Serial.available() > 0) {
@@ -78,6 +88,7 @@ void inputNewPassword() {
   delay(100);
 }
 
+// rfid 卡確認使用者所輸入的 old password
 void confirmOldPassword() {
   if (rfid.isCard() && rfid.readCardSerial()) { // 偵測到卡
     tone(BUZEER_PIN, 976, 200);
@@ -104,12 +115,14 @@ void confirmOldPassword() {
     Serial.println("Confirm old password OK !");
     Serial.println("Please input new password :");
     // 2.code here
+    isNewPasswordStatus = true;
   }
   //--------------------------------------------------------
   rfid.halt(); // 進入休眠
   delay(500);
 }
 
+// rfid 卡寫入最新的 new password
 void writeNewPassword() {
   if (rfid.isCard() && rfid.readCardSerial()) { // 偵測到卡
     tone(BUZEER_PIN, 976, 200);
@@ -150,6 +163,7 @@ void writeNewPassword() {
         }
         Serial.println();
         // 3.code here
+        isNewPasswordStatus = false;
     } else {
         Serial.println("Fail");
     }
