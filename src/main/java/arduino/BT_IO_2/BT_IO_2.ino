@@ -1,8 +1,8 @@
 /*
   藍牙收送程式 HC-05
   接線方式:
-  RXD: D6
-  TXD: D5
+  RXD: D1 (TX -> 1)
+  TXD: D0 (RX <- 0)
   GND: GND
   VCC: +5v
 */
