@@ -19,9 +19,9 @@
 
 LiquidCrystal_I2C lcd(I2C_ADDR, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 Servo myservo; // 建立 Servo 物件
-int initDegree = 15;
-int maxDegree = 105;
-int curDegree = initDegree;
+int openDegree  = 15;  // 開門角度
+int closeDegree = 105; // 關門角度
+int curDegree   = closeDegree;
 
 Timer timer1, timer2, timer3;
 int control = 0;
@@ -40,17 +40,17 @@ void setup() {
   lcd.print("R:");
   
   myservo.attach(SERVO_PIN); // 設定 Servo 訊號腳位
-  myservo.write(initDegree); // 0~180
+  myservo.write(curDegree); // 0~180
   
   timer1.every(100,  listenerSerial);
   timer2.every(100,  playLED);
-  //timer3.every(100,  playServo);
+  timer3.every(100,  playServo);
 }
 
 void loop() {
   timer1.update();
   timer2.update();
-  //timer3.update();
+  timer3.update();
 }
 
 void playLED() {
@@ -59,17 +59,24 @@ void playLED() {
 }
 
 void playServo() {
-  for (int i = initDegree; i <= maxDegree; i += 5) {
-    myservo.write(i);
-    Serial.println(i);
-    delay(50);
+  // 開門
+  if((control & 4) > 0 && curDegree == closeDegree) {
+    for (int i = closeDegree; i >= openDegree; i -= 5) {
+      myservo.write(i);
+      curDegree = i;
+      delay(50);
+    }
   }
-  delay(3000);
-  for (int i = maxDegree; i >= initDegree; i -= 5) {
-    myservo.write(i);
-    Serial.println(i);
-    delay(50);
+  
+  // 關門
+  if((control & 8) > 0 && curDegree == openDegree) {
+    for (int i = openDegree; i <= closeDegree; i += 5) {
+      myservo.write(i);
+      curDegree = i;
+      delay(50);
+    }
   }
+  
 }
 
 void listenerSerial() {
