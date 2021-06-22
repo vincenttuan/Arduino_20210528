@@ -97,6 +97,14 @@ void responseData() {
   Serial.print(",");
   Serial.print(humi);
   Serial.println();
+  lcd.setCursor(0, 1);
+  lcd.print("                ");
+  lcd.setCursor(0, 1);
+  lcd.print(cdsValue);
+  lcd.print(",");
+  lcd.print(temp);
+  lcd.print(",");
+  lcd.print(humi);
 }
 void playDHT11() {
   float h = dht.readHumidity(); // 濕度
