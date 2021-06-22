@@ -54,6 +54,8 @@ float humi = 0.0;
 float temp = 0.0;
 
 int control = 0;
+int minControl = 0;
+int maxControl = 15;
 String inString = "";
 
 void setup() {
@@ -156,11 +158,14 @@ void listenerSerial() {
       inString += (char)inChar;
     }
     if (inChar == '\n' || inChar == '#') { // "#" 或 "\n" 表示結束字元
-      lcd.setCursor(2, 0);
-      lcd.print("                ");
-      lcd.setCursor(2, 0);
-      control = inString.toInt();
-      lcd.print(control);
+      int tmpControl = inString.toInt();
+      if(tmpControl >= minControl && tmpControl <= maxControl) {
+        control = tmpControl;
+        lcd.setCursor(2, 0);
+        lcd.print("                ");
+        lcd.setCursor(2, 0);
+        lcd.print(control);
+      }
       inString = "";
     }
   }
