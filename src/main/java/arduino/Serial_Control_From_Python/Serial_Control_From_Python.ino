@@ -25,9 +25,6 @@
           DATA -> D5
           VCC  -> +5V
 
-
-
-
 */
 #include <Servo.h>
 #include <Timer.h>
@@ -54,7 +51,7 @@ DHT dht(DHT_PIN, DHT_TYPE); // 初始化 dht
 int DHT_DELTA = -5;
 int openDegree  = 15;  // 開門角度
 int closeDegree = 105; // 關門角度
-int curDegree   = closeDegree;
+int curDegree   = openDegree;
 int cdsValue = 0;
 float humi = 0.0;
 float temp = 0.0;
@@ -110,6 +107,8 @@ void responseData() {
   Serial.print(humi);
   Serial.print(",");
   Serial.print(control);
+  Serial.print(",");
+  Serial.print(curDegree);
   Serial.println();
   lcd.setCursor(0, 1);
   lcd.print("                ");
