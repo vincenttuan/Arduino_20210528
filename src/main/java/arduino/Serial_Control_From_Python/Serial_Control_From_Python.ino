@@ -43,6 +43,8 @@
 #define CDS_PIN A3
 #define DHT_TYPE DHT11
 #define DHT_PIN 5
+#define BUZEER_PIN 6
+#define BUTTON_PIN 7
 
 LiquidCrystal_I2C lcd(I2C_ADDR, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 Timer timer1, timer2, timer3, timer4, timer5, timer6;
@@ -59,14 +61,18 @@ float temp = 0.0;
 
 int control = 0;
 int minControl = 0;
-int maxControl = 15;
+int maxControl = 255;
 String inString = "";
+
+boolean isBuzeer = false;
 
 void setup() {
   Serial.begin(9600);
   pinMode(RED_PIN, OUTPUT);
   pinMode(GEEEN_PIN, OUTPUT);
   pinMode(SERVO_PIN, OUTPUT);
+  pinMode(BUZEER_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT);
 
   lcd.begin(16, 2);
   lcd.setBacklight(HIGH);
@@ -82,8 +88,8 @@ void setup() {
   timer1.every(100,  listenerSerial);
   timer2.every(100,  playLED);
   timer3.every(100,  playServo);
-  timer4.every(100,  playCDS);
-  timer5.every(100,  playDHT11);
+  timer4.every(100,  playBuzeerAndButton);
+  timer5.every(100,  playDHT11AndCDS);
   timer6.every(100,  responseData);
 }
 
@@ -102,17 +108,21 @@ void responseData() {
   Serial.print(temp);
   Serial.print(",");
   Serial.print(humi);
+  Serial.print(",");
+  Serial.print(control);
   Serial.println();
   lcd.setCursor(0, 1);
   lcd.print("                ");
   lcd.setCursor(0, 1);
   lcd.print(cdsValue);
-  lcd.print(",");
+  lcd.print(", ");
   lcd.print(temp);
   lcd.print(",");
   lcd.print(humi);
 }
-void playDHT11() {
+
+void playDHT11AndCDS() {
+  cdsValue = analogRead(CDS_PIN);
   float h = dht.readHumidity(); // 濕度
   float t = dht.readTemperature(false); // 溫度 true: 華氏, false(預設): 攝氏
   if (isnan(h) || isnan(t)) { // nan -> not a number
@@ -124,9 +134,18 @@ void playDHT11() {
   temp = t + DHT_DELTA;
 }
 
-void playCDS() {
-  cdsValue = analogRead(CDS_PIN);
-
+void playBuzeerAndButton() {
+  if (control == 16) { // 開警報
+    isBuzeer = true;
+  }
+  if (isBuzeer) {
+    tone(BUZEER_PIN, 2500, 500);
+    delay(200);
+  }
+  if (digitalRead(BUTTON_PIN) == LOW) { // LOW = 0, HIGH = 1
+    control = 32; // 關警報
+    isBuzeer = false;
+  }
 }
 
 void playLED() {
@@ -157,29 +176,29 @@ void playServo() {
 
 boolean ow = false;
 String owString = "";
+//ex: A23.56,78.12#
 void listenerSerial() {
   while (Serial.available() > 0) {
     int inChar = Serial.read();
-    if (isDigit(inChar) && ow == false) {
-      inString += (char)inChar;
-    } else if (inChar == 65) {
+    if (inChar == 65) { // A
       owString = "";
       ow = true;
+    } else if (isDigit(inChar) && ow == false) {
+      inString += (char)inChar;
     }
-    if (ow) {
+
+    if (ow == true) {
       owString += (char)inChar;
     }
 
     if (inChar == '\n' || inChar == '#' && ow == true) {
-      lcd.setCursor(4, 0);
+      lcd.setCursor(5, 0);
       lcd.print("            ");
-      lcd.setCursor(4, 0);
-      lcd.print(owString.substring(1, owString.length()-1));
+      lcd.setCursor(5, 0);
+      lcd.print(owString.substring(1, owString.length() - 1)); // ex: A23.56,78.12# -> 23.56,78.12
       owString = "";
       ow = false;
-    }
-
-    if (inChar == '\n' || inChar == '#' && ow == false) { // "#" 或 "\n" 表示結束字元
+    } else if (inChar == '\n' || inChar == '#' && ow == false) { // "#" 或 "\n" 表示結束字元
       int tmpControl = inString.toInt();
       if (tmpControl >= minControl && tmpControl <= maxControl) {
         control = tmpControl;
