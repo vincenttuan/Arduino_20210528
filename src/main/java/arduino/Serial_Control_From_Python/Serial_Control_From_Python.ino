@@ -1,29 +1,33 @@
 /*
- * ---------------------------------
- * 接收指令
- * LED RED  :1 -> D2
- * LED GREEN:2 -> D3
- * Servo    :4(Open),
- *           8(Close) -> D4 (紅+5V,菊D4,咖GND)
- *    
- * Python 傳送指定數值可以控制設備
- * 傳送過來的值要顯示在 LCD 上
- * Buzeer => GND -> GND
- *           I/O -> D6
- *           VCC -> +5V
- * BUTTON => D7          
- * ----------------------------------
- * 傳送資料
- * CDS => GND  -> GND
- *        VCC  -> +5V
- *        SIG  -> A3
- * DHT => GND  -> GND
- *        DATA -> D5
- *        VCC  -> +5V
- * 
- * 
- * 
-  
+    LCD 螢幕資料
+   ---------------------------------
+   R:1 28.30,89.00 (接收自Python)
+   756,20.10,57.00 (回應給Python)
+   ---------------------------------
+   接收指令
+   LED RED  :1 -> D2
+   LED GREEN:2 -> D3
+   Servo    :4(Open),
+             8(Close) -> D4 (紅+5V,菊D4,咖GND)
+
+   Python 傳送指定數值可以控制設備
+   傳送過來的值要顯示在 LCD 上
+   Buzeer => GND -> GND
+             I/O -> D6
+             VCC -> +5V
+   BUTTON => D7
+   ----------------------------------
+   傳送資料
+   CDS => GND  -> GND
+          VCC  -> +5V
+          SIG  -> A3
+   DHT => GND  -> GND
+          DATA -> D5
+          VCC  -> +5V
+
+
+
+
 */
 #include <Servo.h>
 #include <Timer.h>
@@ -63,7 +67,7 @@ void setup() {
   pinMode(RED_PIN, OUTPUT);
   pinMode(GEEEN_PIN, OUTPUT);
   pinMode(SERVO_PIN, OUTPUT);
-  
+
   lcd.begin(16, 2);
   lcd.setBacklight(HIGH);
   lcd.clear();
@@ -74,7 +78,7 @@ void setup() {
   myservo.write(curDegree); // 0~180
 
   dht.begin(); // 啟動 dht
-  
+
   timer1.every(100,  listenerSerial);
   timer2.every(100,  playLED);
   timer3.every(100,  playServo);
@@ -111,7 +115,7 @@ void responseData() {
 void playDHT11() {
   float h = dht.readHumidity(); // 濕度
   float t = dht.readTemperature(false); // 溫度 true: 華氏, false(預設): 攝氏
-  if(isnan(h) || isnan(t)) { // nan -> not a number
+  if (isnan(h) || isnan(t)) { // nan -> not a number
     delay(500);
     return;
   }
@@ -122,7 +126,7 @@ void playDHT11() {
 
 void playCDS() {
   cdsValue = analogRead(CDS_PIN);
-    
+
 }
 
 void playLED() {
@@ -151,18 +155,36 @@ void playServo() {
 
 }
 
+boolean ow = false;
+String owString = "";
 void listenerSerial() {
   while (Serial.available() > 0) {
     int inChar = Serial.read();
-    if (isDigit(inChar)) {
+    if (isDigit(inChar) && ow == false) {
       inString += (char)inChar;
+    } else if (inChar == 65) {
+      owString = "";
+      ow = true;
     }
-    if (inChar == '\n' || inChar == '#') { // "#" 或 "\n" 表示結束字元
+    if (ow) {
+      owString += (char)inChar;
+    }
+
+    if (inChar == '\n' || inChar == '#' && ow == true) {
+      lcd.setCursor(4, 0);
+      lcd.print("            ");
+      lcd.setCursor(4, 0);
+      lcd.print(owString.substring(1, owString.length()-1));
+      owString = "";
+      ow = false;
+    }
+
+    if (inChar == '\n' || inChar == '#' && ow == false) { // "#" 或 "\n" 表示結束字元
       int tmpControl = inString.toInt();
-      if(tmpControl >= minControl && tmpControl <= maxControl) {
+      if (tmpControl >= minControl && tmpControl <= maxControl) {
         control = tmpControl;
         lcd.setCursor(2, 0);
-        lcd.print("                ");
+        lcd.print("  ");
         lcd.setCursor(2, 0);
         lcd.print(control);
       }
