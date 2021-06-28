@@ -26,7 +26,7 @@
           VCC  -> +5V
 
   ----------------------------------
-  RFID 接線
+  RFID 接線方式:
   ----------------------------------
   IRQ: 不用接 
   RST: Pin 9 
@@ -36,6 +36,11 @@
   SCK: Pin 13 
   GND: GND 
   3.3v: 3.3v
+  ----------------------------------
+  Relay 接線方式:
+  GND - GND
+  IN1 - D8
+  VCC - 5V
   ----------------------------------
 */
 #include <SPI.h>
@@ -58,6 +63,7 @@
 #define DHT_PIN 5
 #define BUZEER_PIN 6
 #define BUTTON_PIN 7
+#define RELAY_PIN 8
 
 LiquidCrystal_I2C lcd(I2C_ADDR, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 Timer timer1, timer2, timer3, timer4;
@@ -89,7 +95,8 @@ void setup() {
   pinMode(SERVO_PIN, OUTPUT);
   pinMode(BUZEER_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
-
+  pinMode(RELAY_PIN, OUTPUT);
+  
   SPI.begin();
   rfid.init();
   
@@ -103,14 +110,18 @@ void setup() {
   myservo.write(curDegree); // 0~180
 
   dht.begin(); // 啟動 dht
+
+  digitalWrite(RELAY_PIN, HIGH);
   
   timer1.every(100,  listenerSerial);
   timer2.every(100,  detectRFID);
   timer3.every(100,  playLED);
-  timer3.every(100,  playServo);
+  timer3.every(100,  playServoAndRelay);
   timer3.every(100,  playBuzeerAndButton);
   timer3.every(100,  playDHT11AndCDS);
   timer4.every(100,  responseData);
+
+  delay(500);
 }
 
 void loop() {
@@ -186,7 +197,7 @@ void playLED() {
   digitalWrite(GEEEN_PIN, control & 2);
 }
 
-void playServo() {
+void playServoAndRelay() {
   // 開門(關)
   if (((control & 4) > 0 || isFromCard) && curDegree == closeDegree) {
     for (int i = closeDegree; i >= openDegree; i -= 5) {
@@ -194,6 +205,7 @@ void playServo() {
       curDegree = i;
       delay(50);
     }
+    digitalWrite(RELAY_PIN, HIGH);
     isFromCard = false;
   }
 
@@ -204,6 +216,7 @@ void playServo() {
       curDegree = i;
       delay(50);
     }
+    digitalWrite(RELAY_PIN, LOW);
     isFromCard = false;
   }
 
