@@ -25,7 +25,21 @@
           DATA -> D5
           VCC  -> +5V
 
+  ----------------------------------
+  RFID 接線
+  ----------------------------------
+  IRQ: 不用接 
+  RST: Pin 9 
+  SDA(或NSS): Pin 10 
+  MOSI: Pin 11 
+  MISO: Pin 12 
+  SCK: Pin 13 
+  GND: GND 
+  3.3v: 3.3v
+  ----------------------------------
 */
+#include <SPI.h>
+#include <RFID.h>
 #include <Servo.h>
 #include <Timer.h>
 #include <Wire.h>
@@ -33,6 +47,8 @@
 #include <LiquidCrystal_I2C.h>
 #include "DHT.h"
 
+#define RST_PIN 9
+#define SDA_PIN 10 // SS_PIN
 #define RED_PIN 2
 #define GEEEN_PIN 3
 #define SERVO_PIN 4
@@ -44,10 +60,11 @@
 #define BUTTON_PIN 7
 
 LiquidCrystal_I2C lcd(I2C_ADDR, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
-Timer timer1, timer2, timer3, timer4, timer5, timer6;
+Timer timer1, timer2, timer3, timer4;
 Servo myservo; // 建立 Servo 物件
 DHT dht(DHT_PIN, DHT_TYPE); // 初始化 dht
-
+RFID rfid(SDA_PIN, RST_PIN); // 建立 rfid 實體
+  
 int DHT_DELTA = -5;
 int openDegree  = 20;  // 開門角度(關門)
 int closeDegree = 105; // 關門角度(開門)
@@ -60,6 +77,8 @@ int control = 0;
 int minControl = 0;
 int maxControl = 255;
 String inString = "";
+String cardId = ""; // 卡片 id
+boolean isFromCard = false;
 
 boolean isBuzeer = false;
 
@@ -71,6 +90,9 @@ void setup() {
   pinMode(BUZEER_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
 
+  SPI.begin();
+  rfid.init();
+  
   lcd.begin(16, 2);
   lcd.setBacklight(HIGH);
   lcd.clear();
@@ -81,13 +103,14 @@ void setup() {
   myservo.write(curDegree); // 0~180
 
   dht.begin(); // 啟動 dht
-
+  
   timer1.every(100,  listenerSerial);
-  timer2.every(100,  playLED);
+  timer2.every(100,  detectRFID);
+  timer3.every(100,  playLED);
   timer3.every(100,  playServo);
-  timer4.every(100,  playBuzeerAndButton);
-  timer5.every(100,  playDHT11AndCDS);
-  timer6.every(100,  responseData);
+  timer3.every(100,  playBuzeerAndButton);
+  timer3.every(100,  playDHT11AndCDS);
+  timer4.every(100,  responseData);
 }
 
 void loop() {
@@ -95,8 +118,6 @@ void loop() {
   timer2.update();
   timer3.update();
   timer4.update();
-  timer5.update();
-  timer6.update();
 }
 
 void responseData() {
@@ -118,6 +139,19 @@ void responseData() {
   lcd.print(temp);
   lcd.print(",");
   lcd.print(humi);
+}
+
+void detectRFID() {
+  // 檢查是不是 rfid/nfc 卡
+  if (rfid.isCard() && rfid.readCardSerial()) {
+    tone(BUZEER_PIN, 976, 200);
+    for (int i = 0; i < 5; i++) {
+      cardId += String(rfid.serNum[i], HEX); // 組合前5個id內容
+    }
+    isFromCard = true;
+    delay(500);
+  }
+  rfid.halt(); // 卡片休眠
 }
 
 void playDHT11AndCDS() {
@@ -153,22 +187,24 @@ void playLED() {
 }
 
 void playServo() {
-  // 開門
-  if ((control & 4) > 0 && curDegree == closeDegree) {
+  // 開門(關)
+  if (((control & 4) > 0 || isFromCard) && curDegree == closeDegree) {
     for (int i = closeDegree; i >= openDegree; i -= 5) {
       myservo.write(i);
       curDegree = i;
       delay(50);
     }
+    isFromCard = false;
   }
 
-  // 關門
-  if ((control & 8) > 0 && curDegree == openDegree) {
+  // 關門(開)
+  if (((control & 8) > 0 || isFromCard) && curDegree == openDegree) {
     for (int i = openDegree; i <= closeDegree; i += 5) {
       myservo.write(i);
       curDegree = i;
       delay(50);
     }
+    isFromCard = false;
   }
 
 }
