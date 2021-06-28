@@ -49,8 +49,8 @@ Servo myservo; // 建立 Servo 物件
 DHT dht(DHT_PIN, DHT_TYPE); // 初始化 dht
 
 int DHT_DELTA = -5;
-int openDegree  = 15;  // 開門角度
-int closeDegree = 105; // 關門角度
+int openDegree  = 20;  // 開門角度(關門)
+int closeDegree = 105; // 關門角度(開門)
 int curDegree   = openDegree;
 int cdsValue = 0;
 float humi = 0.0;
@@ -77,7 +77,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print("R:");
 
-  myservo.attach(SERVO_PIN); // 設定 Servo 訊號腳位
+  myservo.attach(SERVO_PIN, 500, 2400); // 設定 Servo 訊號腳位 (500, 2400 調整脈衝減緩抖動發生)
   myservo.write(curDegree); // 0~180
 
   dht.begin(); // 啟動 dht
