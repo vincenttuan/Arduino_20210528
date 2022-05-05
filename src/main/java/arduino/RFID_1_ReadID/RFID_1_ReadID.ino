@@ -4,6 +4,18 @@
 #define SDA_PIN 10
 #define BUZEER_PIN 8
 
+/*
+RFID 接線
+SDA: 10
+SCK: 13
+MOSI: 11
+MISO: 12
+IRQ: 
+GND: GND
+RST: 9
+3.3V: 3.3V
+*/
+
 RFID rfid(SDA_PIN, RST_PIN);
 
 void setup() {
